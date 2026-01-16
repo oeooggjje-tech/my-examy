@@ -1,0 +1,758 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmbryoMaster | النسخة الاحترافية</title>
+    
+    <!-- React & Tailwind Setup -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#e11d48', // rose-600
+                        secondary: '#f43f5e',
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; transition: background-color 0.3s; }
+        .english-text { font-family: 'Inter', sans-serif; direction: ltr; }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* تحسين السكرول بار */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #e11d48; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #be123c; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .dark .glass { background: rgba(30, 41, 59, 0.95); }
+    </style>
+</head>
+<body class="bg-rose-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen selection:bg-rose-200 selection:text-rose-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONS ---
+        const Icons = {
+            Brain: () => <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg>,
+            Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+            Back: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>,
+            Timer: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            Sun: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+            Moon: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
+            Home: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+            Flag: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>,
+            FlagFilled: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>,
+            Grid: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>,
+            Alert: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
+            Repeat: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+        };
+
+        // --- DATABASE ---
+        // نفس الأسئلة تماماً بدون تغيير
+        const lecQuestions = [
+            // Lec 1 (18 Questions)
+            { id: 'l1_1', lec: 1, q: "The development of a human being begins with:", opts: ["Ovulation.", "Fertilization.", "Cleavage.", "Implantation.", "Birth."], ans: 1 },
+            { id: 'l1_2', lec: 1, q: "The TRUE sequence of embryo during intrauterine development is:", opts: ["Zygote, fetal then embryonic stages.", "Fetal, zygote then embryonic stages.", "Embryonic, zygote then fetal stages.", "Fetal, embryonic then zygote stages.", "Zygote, embryonic then fetal stages."], ans: 4 },
+            { id: 'l1_3', lec: 1, q: "The Fetal stage extends from....... to..........", opts: ["Third week, time of birth.", "Second month, time of birth.", "Third month (beginning of 9th week), time of birth.", "Fourth month, time of birth.", "Third week, end of eighth week."], ans: 2 },
+            { id: 'l1_4', lec: 1, q: "Regarding the fetal stage, the correct one is:", opts: ["It officially begins after the 63 days of pregnancy.", "Beyond it, the developing child is considered an embryo.", "Before it, many physiological developments have already ceased.", "Skeletal ossifications are never considered as the starting point of this stage.", "There is no increase in fetal body weight."], ans: 0 },
+            { id: 'l1_5', lec: 1, q: "The gamete cells are:", opts: ["Non reproductive cells.", "Diploid chromosomes.", "Present in different body systems.", "Containing homologous chromosomes.", "Divided by meiosis."], ans: 4 },
+            { id: 'l1_6', lec: 1, q: "The somatic cell, all are true except:", opts: ["has 46 chromosomes.", "has 22 paired autosomes.", "has 23 paired chromosomes.", "has 4n of DNA (during replication).", "has 23 single chromosomes."], ans: 4 },
+            { id: 'l1_7', lec: 1, q: "Purpose of meiotic division is to:", opts: ["Provide each germ cell with total number of chromosomes.", "Provide each germ cell with haploid number & half DNA + exchange genetic material.", "Provide each germ cell with half DNA only.", "Provide each germ cell with haploid number only.", "Provide exchange of genetic material only."], ans: 1 },
+            { id: 'l1_8', lec: 1, q: "In the 1st meiotic division, all are true except:", opts: ["There is a proliferation of cells.", "There is a replication of DNA.", "There is crossing over of chromatid segments.", "There is pairing of homologous chromosomes.", "It results in two haploid cells."], ans: 0 },
+            { id: 'l1_9', lec: 1, q: "Regarding spermatogenesis in male:", opts: ["Differentiation begins in intrauterine life.", "Differentiation begins at puberty.", "Differentiation at yolk sac.", "Under effect of Progesterone.", "Results in 2 sperms only."], ans: 1 },
+            { id: 'l1_10', lec: 1, q: "The spermatogenesis is under the effect of:", opts: ["FSH and LH hormones.", "Estrogen hormone.", "Progesterone hormone.", "Growth hormone.", "ACTH."], ans: 0 },
+            { id: 'l1_11', lec: 1, q: "1ry spermatocyte, choose the false answer:", opts: ["suffers from rapid replication of DNA.", "suffers from short prophase.", "suffers from mitosis.", "It is the largest cell.", "It contains 46 chromosomes."], ans: 1 },
+            { id: 'l1_12', lec: 1, q: "The result of spermatogenesis is:", opts: ["4 spermatids (23 double).", "4 spermatids (46 single).", "4 spermatozoa (23 single).", "4 sperm (46 single).", "4 spermatids (23 single)."], ans: 4 },
+            { id: 'l1_13', lec: 1, q: "Regarding Sperms, choose the false answer:", opts: ["Found in lumen of seminiferous tubules.", "May be dwarf or giant.", "Papanicolaou stain.", "Usually immotile cells.", "are diploid cells."], ans: 4 },
+            { id: 'l1_14', lec: 1, q: "Spermiogenesis means:", opts: ["Maturation of spermatocyte.", "Mutation of spermatocyte.", "Maturation of sperm.", "Morphological changes of spermatid to sperm.", "Morphological changes of 1ry to 2ry."], ans: 3 },
+            { id: 'l1_15', lec: 1, q: "Regarding Spermatids, choose the false answer:", opts: ["formed prior to spermatozoa.", "suffer from differentiation.", "are rounded haploid cell.", "suffers from changes for 10 days duration.", "Contain 23 chromosomes."], ans: 3 },
+            { id: 'l1_16', lec: 1, q: "Klinefelter syndrome 47 XXY results from:", opts: ["TORCHES infection.", "Radiation exposure.", "Structural abnormalities.", "Numerical chromosomal abnormalities.", "Drugs ingestion."], ans: 3 },
+            { id: 'l1_17', lec: 1, q: "Trisomy 21 (Down syndrome) results from:", opts: ["Numerical chromosomal abnormalities.", "Structural abnormalities.", "TORCHES infection.", "Radiation exposure.", "Drugs ingestion."], ans: 0 },
+            { id: 'l1_18', lec: 1, q: "16yo girl, absent menses, webbed neck, 45XO:", opts: ["Turner syndrome.", "Klinefelter.", "Down.", "Triple X.", "Fragile X."], ans: 0 },
+            
+            // Lec 2 (16 Questions)
+            { id: 'l2_1', lec: 2, q: "The primary oocyte is arrested in prophase of 1st meiotic division which is finished at:", opts: ["Intrauterine life.", "Time of birth.", "Time of puberty (just before ovulation).", "Time of ovulation.", "Time of fertilization."], ans: 2 },
+            { id: 'l2_2', lec: 2, q: "When does the secondary oocyte finish the second meiotic division?", opts: ["Before birth.", "At birth.", "At puberty.", "At ovulation.", "At time of fertilization."], ans: 4 },
+            { id: 'l2_3', lec: 2, q: "The 2nd meiotic division is completed if oocyte is:", opts: ["Degenerated.", "Enlarged.", "Divided.", "Multiplied.", "Fertilized."], ans: 4 },
+            { id: 'l2_4', lec: 2, q: "Which of the following statements about oogenesis is CORRECT?", opts: ["It is completed before birth.", "It results in three ova with one polar body.", "It gives rise to one ovum with diploid number of chromosomes.", "It results in one mature ovum and 3 polar bodies.", "It happens entirely in the uterus."], ans: 3 },
+            { id: 'l2_5', lec: 2, q: "During each ovarian cycle, only one follicle reaches full maturity while others will degenerate and become:", opts: ["Primary follicles.", "Secondary follicles.", "Tertiary follicles.", "Mature follicles.", "Atretic follicles."], ans: 4 },
+            { id: 'l2_6', lec: 2, q: "The primary oocyte that is surrounded by a single layer of flat follicular cells is named as:", opts: ["Primordial follicle.", "Primary follicle.", "Secondary follicle.", "Tertiary follicle.", "Mature follicle."], ans: 0 },
+            { id: 'l2_7', lec: 2, q: "In the secondary follicle, the stratified follicular epithelium is called:", opts: ["Corona radiata.", "Zona pellucida.", "Granulosa cells.", "Cumulus oophorous.", "Theca interna."], ans: 2 },
+            { id: 'l2_8', lec: 2, q: "Zona pellucida is a layer of:", opts: ["Protein material.", "Lipid material.", "Mucopolysaccharides (Glycoproteins).", "Amino acid material.", "Protein and lipid materials."], ans: 2 },
+            { id: 'l2_9', lec: 2, q: "Theca interna is characterized by prominent:", opts: ["Smooth endoplasmic reticulum (SER).", "Rough endoplasmic reticulum.", "Golgi apparatus.", "Mitochondria.", "Lysosomes."], ans: 0 },
+            { id: 'l2_10', lec: 2, q: "Which of the following forms the capsule surrounding the mature follicle?", opts: ["Zona granulosa.", "Cumulus oophorous.", "Corona radiata.", "Theca interna.", "Theca externa."], ans: 4 },
+            { id: 'l2_11', lec: 2, q: "Antrum is formed due to:", opts: ["Fluid filled spaces between the theca interna.", "Fluid filled spaces between the theca externa.", "Fluid filled spaces between the corona radiata.", "Fluid filled spaces between the zona pellucida.", "Fluid filled spaces between the granulosa cells."], ans: 4 },
+            { id: 'l2_12', lec: 2, q: "Tertiary follicle is also called:", opts: ["Primordial germ cell.", "Primary germ cell.", "Vesicular follicle.", "Mature follicle.", "Degenerated follicle."], ans: 2 },
+            { id: 'l2_13', lec: 2, q: "Groups of follicular cells that immediately surrounded the oocyte (inside the antrum) are called:", opts: ["Cumulus oophorus (and Corona radiata).", "Theca externa.", "Zona pellucida.", "Granulosa cells (Mural).", "Theca interna."], ans: 0 },
+            { id: 'l2_14', lec: 2, q: "Which of the following secretes estrogen?", opts: ["Zona granulosa.", "Cumulus oophorus.", "Corona radiata.", "Theca interna.", "Theca externa."], ans: 3 },
+            { id: 'l2_15', lec: 2, q: "Regarding oogenesis, choose the FALSE answer:", opts: ["Begins before birth.", "The primary oocyte arrests in prophase I.", "The secondary oocyte arrests in metaphase II.", "A female is born with limited number of oocytes.", "Oogonia continue to divide by mitosis after birth."], ans: 4 },
+            { id: 'l2_16', lec: 2, q: "At ovulation, all are true EXCEPT:", opts: ["The oocyte with its first polar body is enclosed by the zona pellucida.", "There is a completion of the first stage of meiosis.", "The ovarian surface remains intact.", "The mature ova can be detected by ultrasound examination.", "There is a surge of LH hormone."], ans: 2 },
+
+            // Lec 3 (20 Questions)
+            { id: 'l3_1', lec: 3, q: "Which of the following layers of the uterus undergoes cyclic changes and shedding during the menstrual cycle?", opts: ["Stratum functionalis sublayer of endometrium.", "Stratum basalis sublayer of endometrium.", "Functionalis and basalis sublayers of endometrium.", "Myometrial layer.", "Perimetrial layer."], ans: 0 },
+            { id: 'l3_2', lec: 3, q: "Menstrual phase of menstrual cycle lasts for............on average.", opts: ["3-5 days.", "1-2 days.", "6-8 days.", "10-14 days.", "1-28 days."], ans: 0 },
+            { id: 'l3_3', lec: 3, q: "The proliferative phase of endometrium occurs due to secretion of:", opts: ["FSH.", "LH.", "Progesterone.", "Estrogen.", "Prolactin."], ans: 3 },
+            { id: 'l3_4', lec: 3, q: "The estrogen phase (Proliferative) of menstrual cycle:", opts: ["Induces rebuilding of the endometrium.", "Induces hyperplasia of the endometrium.", "Induces hypertrophy of the endometrium.", "Induces degeneration of the endometrium.", "Induces secretory changes in endometrial glands."], ans: 0 },
+            { id: 'l3_5', lec: 3, q: "Which pituitary hormone is most active (initiates growth) during the follicular phase of the ovarian cycle?", opts: ["LH.", "FSH.", "TSH.", "ACTH.", "Oxytocin."], ans: 1 },
+            { id: 'l3_6', lec: 3, q: "The secretory phase of the uterus coincides with the....... of ovary.", opts: ["Follicular phase.", "Ovulatory phase.", "Luteal phase.", "Menstrual phase.", "Proliferative phase."], ans: 2 },
+            { id: 'l3_7', lec: 3, q: "Secretory phase of menstrual cycle is mainly under the effect of:", opts: ["Estrogen.", "Progesterone.", "Prolactin.", "FSH.", "LH."], ans: 1 },
+            { id: 'l3_8', lec: 3, q: "Which of the following hormones is dominant during the luteal phase of ovarian cycle?", opts: ["Androgen.", "Testosterone.", "Estrogen.", "Progesterone.", "Aldosterone."], ans: 3 },
+            { id: 'l3_9', lec: 3, q: "The primary reason for the maximum thickness of the endometrium during the secretory phase is:", opts: ["Accumulation of secretion of uterine glands.", "Oedema in the endometrial stroma.", "Accumulation of secretion and stromal oedema.", "Lying down of smooth muscle fibers.", "Lying down of collagen fibers."], ans: 2 },
+            { id: 'l3_10', lec: 3, q: "At ovulation, all are true EXCEPT:", opts: ["The oocyte with its 1st polar body is enclosed by the zona pellucida.", "There is a completion of the 1st stage of meiosis.", "The ovarian surface remains intact.", "The mature ova can be detected by ultrasound examination.", "There is a surge of LH hormone."], ans: 2 },
+            { id: 'l3_11', lec: 3, q: "During ovulation, some women feel a .........that can help couples in planning a family.", opts: ["Severe pain and severe rise in temperature.", "Slight pain and a slight rise in basal body temperature.", "Severe headache and rigor.", "Slight headache and nausea.", "Vomiting and diarrhea."], ans: 1 },
+            { id: 'l3_12', lec: 3, q: "Corpus luteum, all are true EXCEPT:", opts: ["is formed beyond (after) the ovulation.", "is lodged within the cortical zone of ovary.", "Has hypertrophied granulosa cells.", "Has hypertrophied light stained theca lutein cells.", "It secretes Progesterone."], ans: 3 },
+            { id: 'l3_13', lec: 3, q: "The wall of corpus luteum consists of:", opts: ["Granulosa lutein cells only.", "Theca lutein cells only.", "60% of granulosa lutein cells and 40% theca lutein cells.", "80% granulosa lutein cells, and the remaining are theca lutein cells.", "80% theca lutein cells, and the remaining are granulosa lutein cells."], ans: 3 },
+            { id: 'l3_14', lec: 3, q: "Granulosa lutein cells secrete mainly:", opts: ["Estrogen.", "Progesterone.", "FSH.", "LH.", "Prolactin."], ans: 1 },
+            { id: 'l3_15', lec: 3, q: "Corpus luteum is programmed to act for.......days after its formation (if no pregnancy).", opts: ["10-20 days.", "9-14 days.", "12-14 days.", "12-15 days.", "12-20 days."], ans: 1 },
+            { id: 'l3_16', lec: 3, q: "If pregnancy doesn't occur, the cells of corpus luteum start to:", opts: ["Group.", "Multiply.", "Degenerate.", "Increase in size.", "Divide."], ans: 2 },
+            { id: 'l3_17', lec: 3, q: "Corpus albicans, all are true EXCEPT:", opts: ["Macrophages have a role in its formation.", "fibroblasts are crucial in its formation.", "Collagen fibers are absent.", "It is a form of scar tissue.", "It appears white on the ovary surface."], ans: 2 },
+            { id: 'l3_18', lec: 3, q: "Which structure is responsible for the secretion of hormones that sustains pregnancy until the 4th month?", opts: ["Placenta.", "Corpus albicans.", "Atretic follicle.", "Corpus luteum of pregnancy.", "Pituitary gland."], ans: 3 },
+            { id: 'l3_19', lec: 3, q: "Removal of corpus luteum before the fourth month of pregnancy leads to:", opts: ["Multiple pregnancy.", "Abortion.", "Ectopic pregnancy.", "Premature labor.", "No effect."], ans: 1 },
+            { id: 'l3_20', lec: 3, q: "Clomiphene citrate (Clomid) can induce:", opts: ["Abortion.", "Ectopic pregnancy.", "Multiple ovulations (Multiple pregnancies).", "Placenta previa.", "Neural tube defects."], ans: 2 },
+
+            // Lec 4 (21 Questions)
+            { id: 'l4_1', lec: 4, q: "The development of a human being begins with:", opts: ["Ovulation.", "Fertilization.", "Cleavage.", "Implantation.", "Birth."], ans: 1 },
+            { id: 'l4_2', lec: 4, q: "Fertilization means:", opts: ["The maturation of sperm.", "The maturation of ovum.", "The union of sperm and ovum to form a zygote.", "The union of spermatid and ovum to form a zygote.", "The initial division of the zygote."], ans: 2 },
+            { id: 'l4_3', lec: 4, q: "The period of conditioning of sperm in the female reproductive system to prepare for fertilization is:", opts: ["Chromosomal change.", "Morphological change.", "Cortical reaction.", "Capacitation.", "Zonal reaction."], ans: 3 },
+            { id: 'l4_4', lec: 4, q: "The hydrolytic enzymes (acrosin & trypsin-like) secreted by acrosome of sperm help in penetrating:", opts: ["Follicular cells.", "Theca cells.", "Corona radiata cells.", "Zona pellucida.", "Cell membrane of oocyte."], ans: 3 },
+            { id: 'l4_5', lec: 4, q: "Regarding fertilization, all are true EXCEPT:", opts: ["Capacitation is mandatory for fertilization.", "Ca++ plays a fundamental role prior to it.", "Cell membrane of oocyte is left outside.", "HCO3- is crucial prior to it.", "It occurs in the ampulla of the uterine tube."], ans: 2 },
+            { id: 'l4_6', lec: 4, q: "Process initiated during fertilization by the release of cortical granules from the egg which prevent polyspermy is called:", opts: ["Capacitation.", "Cortical reaction (Zona reaction).", "Acrosomal reaction.", "Cleavage.", "Gastrulation."], ans: 1 },
+            { id: 'l4_7', lec: 4, q: "The term polyspermy means:", opts: ["Penetration of one sperm to more than one oocyte.", "Penetration of more than one sperm to one oocyte.", "Many sperms in the fluid.", "Failure of fertilization.", "Multiple ovulation."], ans: 1 },
+            { id: 'l4_8', lec: 4, q: "The main results of fertilization include all EXCEPT:", opts: ["Restoration of diploid number of chromosomes.", "Determination of the sex of the embryo.", "Initiation of cleavage.", "Formation of the morula directly.", "Variation of human species."], ans: 3 },
+            { id: 'l4_9', lec: 4, q: "The alternative name for the process of cleavage is:", opts: ["Sequestration.", "Determination.", "Segmentation.", "Alternation.", "Substitution."], ans: 2 },
+            { id: 'l4_10', lec: 4, q: "Ideally, the fertilized egg reaches the uterine cavity at which stage?", opts: ["Two-cell stage.", "Four-cell stage.", "Late Morula (about 32-cell stage).", "Early Blastocyst stage.", "Late blastocyst stage."], ans: 2 },
+            { id: 'l4_11', lec: 4, q: "The morula contains:", opts: ["2-4 cells.", "4-8 cells.", "16-32 cells.", "60-100 cells.", "5-10 cells."], ans: 2 },
+            { id: 'l4_12', lec: 4, q: "Cleavage, all are true EXCEPT:", opts: ["It is a series of mitotic divisions.", "There is an increase in the number of cells.", "There is about 3-4 divisions to reach morula.", "Zygote resembles a mulberry (Morula).", "It is a series of meiotic divisions."], ans: 4 },
+            { id: 'l4_13', lec: 4, q: "In the blastocyst, the inner cell mass is called:", opts: ["Trophoblast.", "Embryoblast.", "Blastocele.", "Epiblast.", "Hypoblast."], ans: 1 },
+            { id: 'l4_14', lec: 4, q: "The normal site of blastocyst implantation is:", opts: ["Oviduct (Ampulla).", "Surface of ovary.", "Fundus of uterus.", "Anterior or posterior wall of uterine body.", "Cervix of uterus."], ans: 3 },
+            { id: 'l4_15', lec: 4, q: "How soon after fertilization does implantation start?", opts: ["By 12 hours.", "By 30 hours.", "Day 3.", "Day 6.", "Day 14."], ans: 3 },
+            { id: 'l4_16', lec: 4, q: "Regarding implantation, choose the TRUE one:", opts: ["Apposition, adhesion, invasion are the steps.", "Invasion, adhesion, apposition are the usual steps.", "It occurs in the secretory phase of endometrium.", "It starts at day 14.", "A & C are correct."], ans: 4 },
+            { id: 'l4_17', lec: 4, q: "What structure must degenerate so that implantation can occur? (Hatching process)", opts: ["Syncytiotrophoblast.", "Functional layer of the endometrium.", "Basal layer of the endometrium.", "Cytotrophoblast.", "Zona Pellucida."], ans: 4 },
+            { id: 'l4_18', lec: 4, q: "Ectopic pregnancy occurs in all the followings EXCEPT:", opts: ["Ampulla of uterine tube (Tubal).", "Ovary (Ovarian).", "Peritoneal covering of the intestinal tract (Abdominal).", "Posterior wall of the uterus (Normal).", "Cervix (Cervical)."], ans: 3 },
+            { id: 'l4_19', lec: 4, q: "In placenta previa, the placenta overbridges the:", opts: ["Internal Os of Cervix.", "Fundus.", "Fallopian tube.", "External genitalia.", "Ovary."], ans: 0 },
+            { id: 'l4_20', lec: 4, q: "The clinical case in which the trophoblast develops and forms the placenta while there is no embryoblast (grape-like vesicles) is:", opts: ["Ovarian pregnancy.", "Intestinal pregnancy.", "Hydatidiform mole (molar pregnancy).", "Tubal pregnancy.", "In vitro fertilization."], ans: 2 },
+            { id: 'l4_21', lec: 4, q: "In In-vitro fertilization (IVF), the fertilized eggs are monitored to the ............ then implanted in the uterus.", opts: ["2-cell stage.", "4-cell stage.", "8-cell stage.", "Late blastocyst.", "Gastrula."], ans: 2 },
+
+            // Lec 5 (20 Questions)
+            { id: 'l5_1', lec: 5, q: "The second week of development is referred to as the 'Week of Twos' because:", opts: ["The embryoblast divides into two layers.", "Two cavities form (amniotic & yolk sac).", "The trophoblast organizes into two layers.", "Extraembryonic mesoderm splits into two layers.", "All of the above."], ans: 4 },
+            { id: 'l5_2', lec: 5, q: "\"During the second week of development, why is the embryonic disc called the bilaminar germ disc? Because it is......\"", opts: ["Made of ectoderm and mesoderm.", "Made of mesoderm and endoderm.", "Made of epiblast and hypoblast.", "Including mesoderm as one of its layers.", "Formed during gastrulation."], ans: 2 },
+            { id: 'l5_3', lec: 5, q: "During the 2nd week of development, the embryoblast is differentiated into:", opts: ["Hypoblast only.", "Epiblast only.", "Hypoblast and epiblast.", "Syncytiotrophoblast only.", "Cytotrophoblast and Syncytiotrophoblast."], ans: 2 },
+            { id: 'l5_4', lec: 5, q: "In the 8th day of development, the trophoblast differentiates into 2 layers:", opts: ["Epiblast and hypoblast.", "Cytotrophoblast and syncytiotrophoblast.", "Hypoblast and syncytiotrophoblast.", "Epiblast and cytotrophoblast.", "hypoblast and cytotrophoblast."], ans: 1 },
+            { id: 'l5_5', lec: 5, q: "In the 8th day of development, a small cavity appears in the epiblast that enlarged to become:", opts: ["Chorionic cavity.", "Cytotrophoblast.", "Syncytipotrophoblast.", "Amniotic cavity.", "Yolk sac cavity."], ans: 3 },
+            { id: 'l5_6', lec: 5, q: "The amniotic cavity forms within which of the following structures?", opts: ["Epiblast.", "Cytotrophoblast.", "Syncytiotrophoblast.", "Maternal endometrium.", "Hypoblast."], ans: 0 },
+            { id: 'l5_7', lec: 5, q: "Which of the followings is a mononucleated cell with distinct cell boundaries (mitotically active)?", opts: ["Cytotrophoblast.", "Syncytiotrophoblast.", "Epiblast.", "Hypoblast.", "Amnioblast."], ans: 0 },
+            { id: 'l5_8', lec: 5, q: "The lacunar stage occurs at:", opts: ["6th day of development.", "9th day of development.", "11th to 12th days of development.", "13th day of development.", "14th day."], ans: 1 },
+            { id: 'l5_9', lec: 5, q: "Which of the following develops from the multi-nucleated syncytium and serves as the beginnings of gas exchange?", opts: ["Bilaminar disk.", "Cytotrophoblast.", "Amniotic cavity.", "Lacunae.", "Heuser's membrane."], ans: 3 },
+            { id: 'l5_10', lec: 5, q: "At day 9, a thin membrane formed from hypoblast lines the inner surface of cytotrophoblast called:", opts: ["Heuser's (exocoelomic) membrane.", "Amniotic membrane.", "Chorionic membrane.", "Oropharyngeal membrane.", "Cloacal membrane."], ans: 0 },
+            { id: 'l5_11', lec: 5, q: "The uteroplacental circulation first develops (established) on the ........day of development.", opts: ["5th.", "6th.", "8th.", "11th-12th.", "13th."], ans: 3 },
+            { id: 'l5_12', lec: 5, q: "The blastocyst is completely embedded in the endometrial stroma at:", opts: ["8th day.", "9th day.", "11th-12th day.", "13th day.", "14th day."], ans: 2 },
+            { id: 'l5_13', lec: 5, q: "During the second week, the extraembryonic mesoderm splits into two layers leaving a cavity called:", opts: ["Amniotic cavity.", "Definitive yolk sac.", "Extraembryonic coelom (Chorionic cavity).", "Primitive yolk sac.", "Blastocyst cavity."], ans: 2 },
+            { id: 'l5_14', lec: 5, q: "The term \"bubble on bubble in a balloon\" refers to:", opts: ["Amnion on chorion in a yolk sac.", "Yolk sac on the amnion in a chorionic cavity.", "Amnion on the yolk sac in a chorionic cavity.", "Chorion on the yolk sac in an amniotic cavity.", "Two embryos in one sac."], ans: 2 },
+            { id: 'l5_15', lec: 5, q: "The chorion consists of which of the following?", opts: ["Extraembryonic somatic mesoderm.", "Cytotrophoblast.", "Syncytiotrophoblast.", "All of the above.", "A & B only."], ans: 3 },
+            { id: 'l5_16', lec: 5, q: "At 13th day of development, all are true EXCEPT:", opts: ["It is the time of formation of the primary villi.", "There is hypoblastic cells proliferation (Secondary yolk sac).", "There is cytotrophoblastic cells invasion into syncytium.", "There is an inevitable bleeding (implantation bleeding).", "The neural tube is formed."], ans: 4 },
+            { id: 'l5_17', lec: 5, q: "During 13th day of development, the cytotrophoblast grows and penetrates into syncytium forming cellular columns called:", opts: ["Primary villi.", "Secondary villi.", "Tertiary villi.", "Anchoring villi.", "Stem villi."], ans: 0 },
+            { id: 'l5_18', lec: 5, q: "During 13th day, the original exocoelomic cavity (primitive yolk sac) degenerates and is represented by small cyst called:", opts: ["Chorionic cyst.", "Exocoelomic cyst.", "Definitive yolk sac.", "Allantois.", "Amniotic cyst."], ans: 1 },
+            { id: 'l5_19', lec: 5, q: "The site of penetration of blastocyst is usually healed (surface epithelium regenerates) completely by:", opts: ["8th day.", "9th day.", "11th day.", "13th day.", "15th day."], ans: 3 },
+            { id: 'l5_20', lec: 5, q: "Regarding the Connecting Stalk, which statement is correct?", opts: ["It connects the yolk sac to the amnion.", "It contains the vitelline duct.", "It traverses the chorionic cavity to connect the embryo to the trophoblast.", "It disappears after the 4th week.", "It is formed by endoderm."], ans: 2 },
+
+            // Lec 6 (16 Questions)
+            { id: 'l6_1', lec: 6, q: "The most characteristic event occurring during the third week of gestation is:", opts: ["Implantation.", "Cleavage.", "Gastrulation.", "Neurulation.", "Placentation."], ans: 2 },
+            { id: 'l6_2', lec: 6, q: "Regarding Gastrulation, all are true EXCEPT:", opts: ["It begins with the formation of the primitive streak.", "It establishes the three germ layers.", "It occurs at the caudal end of the embryo.", "It occurs at day 21 of gestation.", "It involves migration of epiblast cells."], ans: 3 },
+            { id: 'l6_3', lec: 6, q: "The Primitive Streak appears on the surface of the epiblast at the:", opts: ["Cephalic (Cranial) end of the embryonic disc.", "Caudal end of the embryonic disc.", "Center of the embryonic disc.", "Lateral margin of the embryonic disc.", "Ventral surface of the hypoblast."], ans: 1 },
+            { id: 'l6_4', lec: 6, q: "Which of the following cells give rise to ALL three germ layers (Ectoderm, Mesoderm, Endoderm) in the embryo?", opts: ["Hypoblast.", "Epiblast.", "Cytotrophoblast.", "Amnioblast.", "Yolk sac endoderm."], ans: 1 },
+            { id: 'l6_5', lec: 6, q: "The process by which epiblast cells detach from the primitive streak and slip beneath it is called:", opts: ["Neurulation.", "Invagination.", "Compaction.", "Differentiation.", "Hatching."], ans: 1 },
+            { id: 'l6_6', lec: 6, q: "Regarding the formation of the Notochord, all are true EXCEPT:", opts: ["It forms from prenotochordal cells invaginating in the primitive node.", "It extends cranially to the prechordal plate.", "The notochordal process temporarily fuses with the underlying endoderm.", "The definitive notochord is a hollow tube.", "It serves as the basis for the axial skeleton."], ans: 3 },
+            { id: 'l6_7', lec: 6, q: "The Neurenteric canal temporarily connects:", opts: ["Amniotic cavity and Yolk sac.", "Chorionic cavity and Amniotic cavity.", "Neural tube and Gut.", "Extraembryonic coelom and Yolk sac.", "Allantois and Hindgut."], ans: 0 },
+            { id: 'l6_8', lec: 6, q: "The Prechordal plate is important for the induction of:", opts: ["Forebrain.", "Hindbrain.", "Spinal cord.", "Heart.", "Limbs."], ans: 0 },
+            { id: 'l6_9', lec: 6, q: "Which of the following structures consists of Ectoderm and Endoderm only (without Mesoderm)?", opts: ["Primitive Streak.", "Notochord.", "Oropharyngeal membrane (and Cloacal membrane).", "Neural plate.", "Amnion."], ans: 2 },
+            { id: 'l6_10', lec: 6, q: "The Allantois appears around day 16 as a diverticulum from:", opts: ["Anterior wall of the yolk sac.", "Posterior wall of the yolk sac.", "Amniotic cavity.", "Chorionic cavity.", "Neural tube."], ans: 1 },
+            { id: 'l6_11', lec: 6, q: "Regarding the growth of the embryonic disc:", opts: ["It grows uniformly in all directions.", "The cephalic end broadens while the caudal end remains narrow.", "The caudal end broadens more than the cephalic end.", "Growth continues until the 8th week.", "The primitive streak disappears at the beginning of the 3rd week."], ans: 1 },
+            { id: 'l6_12', lec: 6, q: "The primitive streak usually disappears (degenerates) by the:", opts: ["End of 2nd week.", "End of 3rd week.", "End of 4th week.", "End of 8th week.", "It never disappears."], ans: 2 },
+            { id: 'l6_13', lec: 6, q: "Sacrococcygeal Teratoma is a tumor that arises from:", opts: ["Remnants of the Notochord.", "Remnants of the Primitive Streak.", "Abnormal neural crest cells.", "Persisting Neurenteric canal.", "Ectopic primordial germ cells."], ans: 1 },
+            { id: 'l6_14', lec: 6, q: "Caudal Dysgenesis (Sirenomelia) is caused by:", opts: ["Insufficient mesoderm formation in the caudal region.", "Defect in the prechordal plate.", "Abnormal neural tube closure.", "Persistence of the primitive streak.", "Situs inversus."], ans: 0 },
+            { id: 'l6_15', lec: 6, q: "Situs Inversus (organs on opposite side) is associated with a defect in:", opts: ["Cilia of the primitive node (Nodal flow).", "Migration of neural crest cells.", "Formation of the notochord.", "Apoptosis of the webbing between fingers.", "Fusion of the neural folds."], ans: 0 },
+            { id: 'l6_16', lec: 6, q: "High doses of alcohol during gastrulation (Week 3) may destroy the anterior midline of the germ disc, leading to:", opts: ["Spina bifida.", "Anencephaly.", "Holoprosencephaly.", "Caudal dysgenesis.", "Teratoma."], ans: 2 },
+
+            // Lec 7 (21 Questions)
+            { id: 'l7_1', lec: 7, q: "Pharyngeal arches consist of a core of mesenchyme derived from:", opts: ["Paraxial mesoderm only.", "Lateral plate mesoderm only.", "Neural crest cells only.", "Paraxial and Lateral plate mesoderm + Neural crest cells.", "Endoderm only."], ans: 3 },
+            { id: 'l7_2', lec: 7, q: "Regarding the First Pharyngeal Arch, the TRUE answer is:", opts: ["Cartilaginous component has 3 portions.", "The ventral portion is the mandibular process which gives rise to the incus only.", "The maxillary process gives rise to the maxilla.", "The mandibular process gives rise to mandible by endochondral ossification.", "Its nerve is the Facial nerve."], ans: 2 },
+            { id: 'l7_3', lec: 7, q: "The cartilage of the First Arch (Meckel's cartilage) gives rise to:", opts: ["Stapes and Styloid process.", "Malleus and Incus.", "Hyoid bone (upper part).", "Thyroid cartilage.", "Cricoid cartilage."], ans: 1 },
+            { id: 'l7_4', lec: 7, q: "Muscles of mastication (Temporalis, Masseter, Pterygoids) are derived from:", opts: ["First pharyngeal arch.", "Second pharyngeal arch.", "Third pharyngeal arch.", "Fourth pharyngeal arch.", "Sixth pharyngeal arch."], ans: 0 },
+            { id: 'l7_5', lec: 7, q: "Reichert's cartilage (Second Arch) gives off:", opts: ["Greater horn of hyoid bone and stapes.", "Styloid process of the temporal bone.", "Incus.", "Lesser horn of hyoid bone & malleus.", "Thyroid cartilage."], ans: 1 },
+            { id: 'l7_6', lec: 7, q: "Muscles of facial expression are derived from:", opts: ["First pharyngeal arch.", "Second pharyngeal arch.", "Third pharyngeal arch.", "Fourth pharyngeal arch.", "Sixth pharyngeal arch."], ans: 1 },
+            { id: 'l7_7', lec: 7, q: "The nerve of the Third Pharyngeal Arch is:", opts: ["Optic.", "Facial.", "Glossopharyngeal (IX).", "Trigeminal.", "Vagus."], ans: 2 },
+            { id: 'l7_8', lec: 7, q: "Hyoid bone is derived from:", opts: ["1st and 2nd pharyngeal arches.", "2nd and 3rd pharyngeal arches.", "3rd and 4th pharyngeal arches.", "4th and 6th pharyngeal arches.", "1st and 3rd pharyngeal arches."], ans: 1 },
+            { id: 'l7_9', lec: 7, q: "Regarding the Fourth and Sixth Pharyngeal Arches, the TRUE answer is:", opts: ["Cricothyroid m. is from 6th arch.", "The intrinsic muscles of the larynx are from the sixth arch.", "Superior laryngeal nerve is nerve of 6th arch.", "Arytenoid cartilages are not derivatives of these arches.", "Recurrent laryngeal nerve is nerve of 4th arch."], ans: 1 },
+            { id: 'l7_10', lec: 7, q: "The auditory tube (Eustachian tube) and middle ear cavity are derived from:", opts: ["1st Pharyngeal pouch.", "2nd Pharyngeal pouch.", "3rd Pharyngeal pouch.", "4th Pharyngeal pouch.", "1st Pharyngeal cleft."], ans: 0 },
+            { id: 'l7_11', lec: 7, q: "The epithelial lining of the second pouch undergoes proliferation to form:", opts: ["Thymus.", "Palatine tonsil.", "Parathyroid gland.", "Thyroid gland.", "Auditory tube."], ans: 1 },
+            { id: 'l7_12', lec: 7, q: "The Thymus is derived from:", opts: ["1st Pharyngeal pouch.", "2nd Pharyngeal pouch.", "3rd Pharyngeal pouch.", "4th Pharyngeal pouch.", "3rd Pharyngeal cleft."], ans: 2 },
+            { id: 'l7_13', lec: 7, q: "The Parafollicular C-cells of the thyroid are originated from:", opts: ["1st Pharyngeal pouch.", "2nd Pharyngeal pouch.", "3rd Pharyngeal pouch.", "4th (and 5th) Pharyngeal pouch (Ultimobranchial body).", "Foramen cecum."], ans: 3 },
+            { id: 'l7_14', lec: 7, q: "All are true regarding Pharyngeal Clefts EXCEPT:", opts: ["The 1st cleft forms the external auditory meatus.", "The 2nd, 3rd, and 4th clefts form the cervical sinus.", "The cervical sinus normally disappears.", "Branchial cyst is the remnant of the cervical sinus.", "Branchial cyst is mostly located in the midline of the neck."], ans: 4 },
+            { id: 'l7_15', lec: 7, q: "Branchial fistula takes place if there is:", opts: ["Rupture of the membrane between 2nd cleft and pouch.", "Persistence of the 2nd pharyngeal cleft only.", "Communication between persistent cervical sinus and exterior.", "Failure of fusion of maxillary processes.", "Persistence of thyroglossal duct."], ans: 2 },
+            { id: 'l7_16', lec: 7, q: "The tongue appears in the form of:", opts: ["Two lateral swellings and one median swelling (Tuberculum impar).", "Two medial swellings and three lateral swellings.", "Two medial swellings and one lateral swelling.", "One lateral swelling and one median swelling.", "Two lateral swellings and two median swellings."], ans: 0 },
+            { id: 'l7_17', lec: 7, q: "The anterior two-thirds of the tongue is developed from:", opts: ["1st Pharyngeal arch.", "2nd Pharyngeal arch.", "3rd Pharyngeal arch.", "4th Pharyngeal arch.", "3rd and 4th arches."], ans: 0 },
+            { id: 'l7_18', lec: 7, q: "Copula (Hypobranchial eminence) originates from:", opts: ["1st arch.", "2nd, 3rd, and part of 4th arches.", "1st and 2nd arches.", "6th arch.", "Frontonasal process."], ans: 1 },
+            { id: 'l7_19', lec: 7, q: "Which of the following anomalies is related to the tongue?", opts: ["Ankyloglossia (Tongue-tie).", "Thyroglossal cyst.", "Macroglossia.", "Microglossia.", "All of the above."], ans: 4 },
+            { id: 'l7_20', lec: 7, q: "The Foramen Cecum of the adult tongue:", opts: ["Develops into taste buds.", "Divides the tongue into anterior and posterior parts.", "Marks the point of embryonic evagination of the thyroid gland.", "Marks the point of embryonic evagination of the thymus.", "Has no embryonic significance."], ans: 2 },
+            { id: 'l7_21', lec: 7, q: "A 3-year-old boy is admitted to the hospital because of a soft, anterior, midline cervical mass. When the patient is asked to protrude his tongue, the mass moves upward. What is the diagnosis?", opts: ["Branchial cyst.", "Thyroglossal cyst.", "Thymic cyst.", "Lipoma.", "Ectopic thyroid."], ans: 1 },
+
+            // Lec 8 (17 Questions)
+            { id: 'l8_1', lec: 8, q: "The Fetal Stage extends from:", opts: ["The beginning of the 2nd week till the time of birth.", "The beginning of the 9th week (3rd month) till the time of birth.", "The beginning of the 3rd week to the end of 8th week.", "The beginning of the 4th week till the time of birth.", "The beginning of the 2nd month till the time of birth."], ans: 1 },
+            { id: 'l8_2', lec: 8, q: "Regarding the fetal stage, the CORRECT statement is:", opts: ["It officially begins after the 63 days of pregnancy.", "Beyond it, child is considered an embryo.", "Before it, many physiological developments have already ceased.", "Skeletal ossifications are never considered as the starting point of this stage.", "There is no increase in fetal body weight."], ans: 0 },
+            { id: 'l8_3', lec: 8, q: "Ideally, the duration of pregnancy is about ...... days from the fertilization:", opts: ["280 days.", "266 days.", "290 days.", "250 days.", "300 days."], ans: 1 },
+            { id: 'l8_4', lec: 8, q: "During the fetal period, rapid growth in LENGTH occurs mainly during:", opts: ["1st, 2nd, 3rd months.", "3rd, 4th, 5th months.", "6th, 7th, 8th months.", "Last two months.", "2nd trimester only."], ans: 1 },
+            { id: 'l8_5', lec: 8, q: "Dramatic increase in the WEIGHT of the fetus occurs mainly during:", opts: ["Last 2.5 months (8th & 9th months).", "3rd and 4th months.", "5th and 6th months.", "First trimester.", "Throughout the fetal period equally."], ans: 0 },
+            { id: 'l8_6', lec: 8, q: "Relative slowdown in the growth of the HEAD compared to the rest of the body occurs in:", opts: ["Embryonic period.", "Fetal period.", "Germinal period.", "Neonatal period.", "Puberty."], ans: 1 },
+            { id: 'l8_7', lec: 8, q: "The sex of the fetus can be determined externally by ultrasound by the:", opts: ["8th week.", "10th week.", "12th week (End of 3rd month).", "16th week.", "20th week."], ans: 2 },
+            { id: 'l8_8', lec: 8, q: "Movements of the fetus are first recognized by the mother (Quickening) during:", opts: ["3rd month.", "4th month.", "5th month.", "6th month.", "7th month."], ans: 2 },
+            { id: 'l8_9', lec: 8, q: "Lanugo hair (fine hair) appears covering the fetal body during:", opts: ["3rd month.", "4th-5th months.", "7th month.", "9th month.", "At birth."], ans: 1 },
+            { id: 'l8_10', lec: 8, q: "The skin of the fetus is reddish and has a wrinkled appearance (due to lack of underlying fat) during:", opts: ["3rd month.", "4th month.", "6th month.", "8th month.", "9th month."], ans: 2 },
+            { id: 'l8_11', lec: 8, q: "At which stage does the fetus develop rounded contours due to rapid deposition of subcutaneous fat?", opts: ["3rd month.", "5th month.", "6th month.", "8th & 9th months.", "4th month."], ans: 3 },
+            { id: 'l8_12', lec: 8, q: "By the end of the 12th week (3rd month), which of the following is TRUE?", opts: ["The physiological umbilical hernia is reduced (loops return to abdomen).", "Primary ossification centers appear in long bones and skull.", "Sex of fetus can be determined.", "Eyes move to the ventral aspect of the face.", "All of the above."], ans: 4 },
+            { id: 'l8_13', lec: 8, q: "A female with Last Menstrual Period (LMP) at 1/1/2024, the Expected Date of Delivery (EDD) is:", opts: ["8/10/2024.", "8/8/2024.", "1/10/2024.", "8/10/2025.", "15/10/2024."], ans: 0 },
+            { id: 'l8_14', lec: 8, q: "A female with LMP at 1/10/2020, The EDD is:", opts: ["7/8/2021.", "8/7/2021.", "8/8/2021.", "8/6/2021.", "1/7/2021."], ans: 1 },
+            { id: 'l8_15', lec: 8, q: "Low birth weight (LBW) and Intrauterine Growth Restriction (IUGR) are most commonly associated with maternal:", opts: ["Mild exercise.", "Heavy smoking.", "Increased water intake.", "High protein diet.", "Vitamin C intake."], ans: 1 },
+            { id: 'l8_16', lec: 8, q: "Which of the following infections (TORCHES) causes congenital cataracts, deafness, and heart defects (Gregg Triad)?", opts: ["Toxoplasmosis.", "Rubella (German Measles).", "Cytomegalovirus (CMV).", "Herpes Simplex.", "Syphilis."], ans: 1 },
+            { id: 'l8_17', lec: 8, q: "Which of the following is NOT a feature of a Full Term baby?", opts: ["Weight 3000-3500 gm.", "CRL about 36 cm (CHL 50 cm).", "Testes are in the abdomen.", "Skin is smooth and pink (not wrinkled).", "Covered with vernix caseosa."], ans: 2 },
+
+            // Lec 9 (21 Questions)
+            { id: 'l9_1', lec: 9, q: "The Fetal Membranes include all the following EXCEPT:", opts: ["Amnion.", "Chorion.", "Yolk sac.", "Allantois.", "Decidua."], ans: 4 },
+            { id: 'l9_2', lec: 9, q: "The maternal part of the placenta is derived from:", opts: ["Decidua capsularis.", "Decidua basalis.", "Decidua parietalis.", "Chorion frondosum.", "Chorion laeve."], ans: 1 },
+            { id: 'l9_3', lec: 9, q: "The parts of Decidua are:", opts: ["One.", "Two.", "Three.", "Four.", "Five."], ans: 2 },
+            { id: 'l9_4', lec: 9, q: "The Chorion consists of:", opts: ["Extraembryonic somatic mesoderm and trophoblast.", "Extraembryonic splanchnic mesoderm and trophoblast.", "Amniotic epithelium and mesoderm.", "Endoderm and mesoderm.", "Decidua basalis only."], ans: 0 },
+            { id: 'l9_5', lec: 9, q: "The fetal part of the placenta is called:", opts: ["Chorion laeve.", "Chorion frondosum.", "Decidua basalis.", "Decidua capsularis.", "Syncytium."], ans: 1 },
+            { id: 'l9_6', lec: 9, q: "Regarding the placenta, all are true EXCEPT:", opts: ["Extraembryonic mesoderm extends into villi in day 13 (Secondary villi).", "The branched villi are the zone of exchange of substances.", "Chorionic plate is the site where placental vessels run.", "At day 60, tertiary villi formation is accomplished.", "The maternal blood is separated from fetal blood by 1 layer only."], ans: 4 },
+            { id: 'l9_7', lec: 9, q: "At 5th month of gestation (and later), the fetal-maternal blood barrier contains mainly:", opts: ["Epithelial wall of fetal capillaries and Syncytium.", "Cytotrophoblast and Mesoderm.", "Mesodermal tissue core only.", "Cytotrophoblasts only.", "Decidua cells."], ans: 0 },
+            { id: 'l9_8', lec: 9, q: "Placental Hormones include all the following EXCEPT:", opts: ["Progesterone.", "Estrogen (Estriol).", "Human Chorionic Gonadotropin (hCG).", "Human Placental Lactogen (Somatomammotropin).", "Glucagon."], ans: 4 },
+            { id: 'l9_9', lec: 9, q: "The premature detachment of the placenta from the uterus (before delivery) is named as:", opts: ["Placenta previa.", "Placental abruption (Abruptio placentae).", "Placenta accreta.", "Placenta percreta.", "Retained placenta."], ans: 1 },
+            { id: 'l9_10', lec: 9, q: "The commonest placental adhesion type (abnormal adherence) is:", opts: ["Placenta Accreta.", "Placenta Increta.", "Placenta Percreta.", "Placenta Previa.", "Placenta membranacea."], ans: 0 },
+            { id: 'l9_11', lec: 9, q: "The Amniotic fluid is produced by:", opts: ["Amniotic cells.", "Infusion of fluid from maternal blood.", "Fetal urine (in late pregnancy).", "Pulmonary secretions.", "All of the above."], ans: 4 },
+            { id: 'l9_12', lec: 9, q: "If the amount of amniotic fluid exceeds 1500-2000 ml, the condition is diagnosed as:", opts: ["Oligohydramnios.", "Polyhydramnios (Hydramnios).", "Normal volume.", "Hydrops fetalis.", "Renal agenesis."], ans: 1 },
+            { id: 'l9_13', lec: 9, q: "Oligohydramnios (fluid < 400 ml) is usually associated with:", opts: ["Esophageal atresia.", "Renal agenesis (absence of kidneys).", "Anencephaly.", "Maternal diabetes.", "Twin pregnancy."], ans: 1 },
+            { id: 'l9_14', lec: 9, q: "Regarding the amniotic fluid, choose the FALSE one:", opts: ["It sterilizes the birth canal.", "Polyhydramnios with esophageal atresia.", "Oligohydramnios with renal agenesis.", "Meconium stained amniotic fluid indicates fetal distress.", "It protects the fetus from trauma."], ans: 0 },
+            { id: 'l9_15', lec: 9, q: "The Umbilical Cord normally contains:", opts: ["2 Arteries and 1 Vein.", "2 Veins and 1 Artery.", "2 Arteries and 2 Veins.", "1 Artery and 1 Vein.", "Vitelline duct only."], ans: 0 },
+            { id: 'l9_16', lec: 9, q: "Wharton's jelly (in the umbilical cord) is rich in:", opts: ["Vitamins.", "Lipids.", "Proteoglycans (Mucopolysaccharides).", "Glycosaminoglycans.", "Estrogen."], ans: 2 },
+            { id: 'l9_17', lec: 9, q: "Regarding Velamentous insertion of the umbilical cord, choose the TRUE statement:", opts: ["The cord inserts into the center of the placenta.", "The cord inserts into the chorioamniotic membranes (away from placenta).", "Wharton's jelly protection is present up to the placenta.", "It is the safest type of insertion.", "It never causes bleeding."], ans: 1 },
+            { id: 'l9_18', lec: 9, q: "Meckel's Diverticulum is a remnant of:", opts: ["Allantois.", "Yolk stalk (Vitelline duct).", "Urachus.", "Connecting stalk.", "Amnion."], ans: 1 },
+            { id: 'l9_19', lec: 9, q: "Allantois remnants in the adult form the:", opts: ["Median umbilical ligament (Urachus).", "Medial umbilical ligament.", "Ligamentum teres.", "Ligamentum venosum.", "Round ligament."], ans: 0 },
+            { id: 'l9_20', lec: 9, q: "In Monozygotic twins (Identical), if splitting occurs at the Early Blastocyst stage (Inner cell mass splitting), the result is:", opts: ["2 Placentas, 2 Chorions, 2 Amnions.", "1 Placenta, 1 Chorion, 2 Amnions.", "1 Placenta, 1 Chorion, 1 Amnion.", "Conjoined twins.", "2 Placentas, 1 Chorion, 2 Amnions."], ans: 1 },
+            { id: 'l9_21', lec: 9, q: "In Dizygotic twins (Fraternal), all are true EXCEPT:", opts: ["Result from fertilization of two separate oocytes.", "They have 2 Placentas, 2 Chorions, 2 Amnions.", "They are genetically identical.", "They can be different sexes.", "Incidence increases with maternal age."], ans: 2 }
+        ];
+
+        // 2. MIDTERM EXAM QUESTIONS (60 Qs - FROM PDF)
+        const midQuestions = [
+            { id: 'm1', q: "The development of a human being begins with:", opts: ["Ovulation.", "Fertilization.", "Cleavage.", "Implantation.", "Birth."], ans: 1 },
+            { id: 'm2', q: "Fertilization means:", opts: ["The maturation of sperm.", "The maturation of ovum.", "The union of sperm and ovum to form a zygote.", "The union of spermatid and ovum to form a zygote.", "The initial division of the zygote."], ans: 2 },
+            { id: 'm3', q: "The Fetal stage extends from....... to..........", opts: ["Third week, time of birth.", "Second month, time of birth.", "Third month, time of birth.", "Fourth month, time of birth.", "Third week, end of eighth week."], ans: 2 },
+            { id: 'm4', q: "Klinefelter syndrome 47 XXY results from:", opts: ["TORCHES infection during pregnancy.", "Radiation exposure in first trimester.", "Structural chromosomal abnormalities.", "Numerical chromosomal abnormalities.", "Drugs ingestion during pregnancy."], ans: 3 },
+            { id: 'm5', q: "Spermiogenesis means:", opts: ["Maturation of spermatocyte.", "Mutation of spermatocyte.", "Maturation of sperm.", "Morphological changes of spermatid to sperm.", "Morphological changes of Iry spermatocyte to 2ry spermatocyte."], ans: 3 },
+            { id: 'm6', q: "The TRUE sequence of embryo during intrauterine development is:", opts: ["Zygote, fetal then embryonic stages.", "Fetal, zygote then embryonic stages.", "Embryonic, zygote then fetal stages.", "Fetal, embryonic then zygote stages.", "Zygote, embryonic then fetal stages."], ans: 4 },
+            { id: 'm7', q: "The gamete cells are:", opts: ["Non reproductive cells.", "Diploid chromosomes.", "Present in different body systems.", "Containing homologous chromosomes.", "Divided by meiosis."], ans: 4 },
+            { id: 'm8', q: "Male with Down syndrome (trisomy 21) has:", opts: ["Enlarged tongue that sticks out of mouth.", "Smaller testis.", "Prominent breast.", "Reduced muscle tone.", "Sparse facial hair."], ans: 0 },
+            { id: 'm9', q: "When the secondary oocyte finishes the second meiotic division?", opts: ["Before birth.", "At birth.", "At puberty.", "At ovulation.", "At fertilization."], ans: 4 },
+            { id: 'm10', q: "The primary oocyte that is surrounded by a single layer of flat follicular cells is named as......", opts: ["Primordial follicle.", "Primary follicle.", "Secondary follicle.", "Tertiary follicle.", "Mature follicle."], ans: 0 },
+            { id: 'm11', q: "Which of the following statements about theca interna cells is TRUE?", opts: ["They form a connective tissue capsule around the follicle.", "They differentiate into granulosa cells.", "They degenerate after birth.", "They secrete estrogen.", "They produce follicular stimulating hormone."], ans: 3 },
+            { id: 'm12', q: "Which of the following statements about oogenesis is CORRECT?", opts: ["It is completed before birth.", "It results in three ova with one polar body.", "It gives rise to one ovum with diploid number of chromosomes.", "It is happened after birth.", "It is controlled by pituitary hormones FSH and LH."], ans: 4 },
+            { id: 'm13', q: "The primary oocyte is arrested in prophase of 1st meiotic division which is finished at.........", opts: ["Intrauterine life.", "Time of birth.", "Time of puberty.", "Time of ovulation.", "Time of fertilization."], ans: 3 }, 
+            { id: 'm14', q: "Which of the followings should happen to oocyte to become mature ovum?", opts: ["Maturation before birth only.", "Maturation after birth only.", "Chromosomal changes only.", "Morphological changes only.", "Chromosomal and morphological changes."], ans: 4 },
+            { id: 'm15', q: "The process of spermatogenesis begins:", opts: ["Before birth.", "After birth.", "Before birth and continue after that.", "At childhood.", "At puberty."], ans: 4 },
+            { id: 'm16', q: "If the ovulated egg is not fertilized, it will be degenerated after......... hours.", opts: ["5.", "10.", "24.", "36.", "48."], ans: 2 },
+            { id: 'm17', q: "Which of the following layers of the uterus undergoes changes during the menstrual cycle?", opts: ["Stratum functionalis sublayer of endometrium.", "Stratum basalis sublayer of endometrium.", "Functionalis and basalis sublayers of endometrium.", "Myometrial layer.", "Perimetrial layer."], ans: 0 },
+            { id: 'm18', q: "During each ovarian cycle, only one follicle reaches full maturity while others will degenerate and become...", opts: ["Primary follicles.", "Secondary follicles.", "Tertiary follicles.", "Mature follicles.", "Atretic follicles."], ans: 4 },
+            { id: 'm19', q: "Which pituitary hormone is most active during the proliferative phase of the menstrual cycle?", opts: ["LH.", "FSH.", "TSH.", "ACTH.", "Oxytocin."], ans: 1 },
+            { id: 'm20', q: "Which of the following hormones is dominant during the luteal phase of ovarian cycle?", opts: ["Androgen.", "Testosterone.", "Estrogen.", "Progesterone", "Aldosterone."], ans: 3 },
+            { id: 'm21', q: "The primary reason for the maximum thickness of the endometrium during the secretory phase of the menstrual cycle is:", opts: ["Accumulation of secretion of uterine glands.", "Oedema in the endometrial stroma.", "Accumulation of secretion and stromal oedema.", "Lying down of smooth muscle fibers.", "Lying down of collagen fibers."], ans: 2 },
+            { id: 'm22', q: "Regarding the corpus luteum, which of the following statements is TRUE?", opts: ["It is permanent endocrine organ.", "Formed during the follicular phase of ovarian cycle.", "Consists of 60% granulosa cells and 40% theca cells.", "Made by 80% granulosa lutein cells and 20% theca lutein cells.", "Secretes more estrogen and little progesterone."], ans: 3 },
+            { id: 'm23', q: "Which structure is responsible for the secretion of hormones that sustains pregnancy until the 4th month?", opts: ["Placenta.", "Corpus albicans.", "Atretic follicle.", "Corpus luteum.", "Pituitary gland."], ans: 3 },
+            { id: 'm24', q: "During ovulation, some women feel a .........that can help couples in planning a family.", opts: ["Severe pain and severe rise in temperature.", "Slight pain and a slight rise in temperature.", "Severe headache and rigor.", "Slight headache and nausea.", "Vomiting and diarrhea."], ans: 1 },
+            { id: 'm25', q: "The period of conditioning of sperm in the female reproductive system to prepare for fertilization is:", opts: ["Chromosomal change.", "Morphological change.", "Cortical reaction.", "Capacitation.", "Zonal reaction."], ans: 3 },
+            { id: 'm26', q: "The hydrolytic enzymes secreted by acrosome of sperm help in penetrating:", opts: ["Follicular cells.", "Theca cells.", "Corona radiata cells.", "Zona pellucida.", "Cell membrane of oocyte."], ans: 3 },
+            { id: 'm27', q: "The term polyspermy means:", opts: ["Capacitation of many sperms in female reproductive system.", "Accumulation of sperms in vagina of female.", "Attachment of many sperms to oocyte cell membrane", "Penetration of more than one sperm to one oocyte.", "Penetration of one sperm to more than one oocyte."], ans: 3 },
+            { id: 'm28', q: "Determination of the sex is one of the main results of:", opts: ["Capacitation.", "Cortical reaction.", "Acrosomal reaction.", "Zonal reaction.", "Fertilization."], ans: 4 },
+            { id: 'm29', q: "The alternative name for the process of cleavage is:", opts: ["Sequestration.", "Determination.", "Segmentation.", "Alternation.", "Substitution."], ans: 2 },
+            { id: 'm30', q: "The clinical case in which the trophoblast develops and forms the placenta while there is no embryoblast is:", opts: ["Ovarian pregnancy.", "Intestinal pregnancy.", "Hydatiform mole (molar) pregnancy.", "Tubal pregnancy.", "In vitro fertilization."], ans: 2 },
+            { id: 'm31', q: "The normal site of blastocyst implantation is:", opts: ["Oviduct.", "Surface of ovary.", "Fundus of uterus.", "Anterior or posterior wall of uterine cavity.", "Cervix of uterus."], ans: 3 },
+            { id: 'm32', q: "At which stage does the fertilized egg reach the uterine cavity?", opts: ["Two-cell stage.", "Four-cell stage.", "Morula stage.", "Early Blastocyst stage.", "Late blastocyst stage."], ans: 2 },
+            { id: 'm33', q: "During the second week of development, the extraembryonic mesoderm splits into:", opts: ["Epiblast and hypoblast layers.", "Cytotrophoblast and syncytiotrophoblast layers.", "Endoderm and ectoderm layers.", "Somatic and splanchnic layers.", "Amnioblast cells and Heuser's membrane."], ans: 3 },
+            { id: 'm34', q: "The amniotic cavity first appears during the........day of development.", opts: ["6th.", "8th.", "9th-10th.", "11th-12th.", "13th."], ans: 1 },
+            { id: 'm35', q: "The decidua reaction is the:", opts: ["Endometrial cells filled with lipid and glycogen with tissue edema.", "Important event during the 13th day of development.", "Lacunar spaces in syncytium.", "Connecting stalk connects chorionic vesicle to trophoblast.", "Vacuoles appear in syncytium."], ans: 0 },
+            { id: 'm36', q: "The cellular group of cytotrophoblast that grows and penetrates the syncytium is called:", opts: ["Connecting stalk.", "Primary stem villus.", "Secondary stem villus.", "Tertiary stem villus.", "Intraembryonic mesoderm."], ans: 1 },
+            { id: 'm37', q: "The term \"bubble on bubble in a balloon\" refers to:", opts: ["Amnion on chorion in a yolk sac.", "Yolk sac on the amnion in a chorionic cavity.", "Amnion on the yolk sac in a chorionic cavity.", "Chorion on the yolk sac in an amniotic cavity.", "Chorion on the amnion in a yolk sac."], ans: 2 },
+            { id: 'm38', q: "The uteroplacental circulation first develops on the ........day of development.", opts: ["5th.", "6th.", "8th.", "9th-10th.", "11th-12th."], ans: 4 },
+            { id: 'm39', q: "Which of the followings is a mononucleated cell with distinct cell boundaries?", opts: ["Cytotrophoblast.", "Syncytiotrophoblast.", "Epiblast.", "Hypoblast.", "Intraembryonic mesoderm."], ans: 0 },
+            { id: 'm40', q: "\"During the second week of development, why is the embryonic disc called the bilaminar germ disc? Because it is......\"", opts: ["Made of ectoderm and mesoderm.", "Made of mesoderm and endoderm.", "Made of epiblast and hypoblast.", "Including mesoderm as one of its layers.", "Formed during gastrulation."], ans: 2 },
+            { id: 'm41', q: "At 13th day of development:", opts: ["There is an area of fibrin coagulum.", "Cytotrophoblasts penetration leads to a mistake in the expected date of delivery.", "The definitive yolk sac is formed from hypoblasts.", "The connecting stalk never crosses the chorionic cavity.", "The exocoelomic cyst is enlarged."], ans: 1 },
+            { id: 'm42', q: "Some the hypoblastic cells at 13th day of development are:", opts: ["Cuboidal.", "Columnar.", "Squamous.", "Dom-shaped.", "Oval."], ans: 1 },
+            { id: 'm43', q: "The capillaries at the site of implantation are:", opts: ["Lined with columnar epithelium.", "Lined with cuboidal epithelium.", "Covered firstly by cytotrophoblasts.", "Filled with the fetal blood.", "Sinusoidal."], ans: 4 },
+            { id: 'm44', q: "The primitive streak is:", opts: ["Formed at the gastrulation.", "Formed at the surface of the hypoblasts.", "Formed after the formation of notochordal process.", "Formed after the formation of primitive pit.", "Defined as a small depressed area."], ans: 0 },
+            { id: 'm45', q: "The olfactory epithelium is formed from:", opts: ["Mesoderm.", "Endoderm.", "Ectoderm and endoderm.", "Ectoderm.", "Mesenchyme."], ans: 3 },
+            { id: 'm46', q: "The adrenal medulla is derived from:", opts: ["Mesoderm.", "Ectdoderm.", "Ectoderm and endoderm.", "Endoderm.", "Mesenchyme."], ans: 1 },
+            { id: 'm47', q: "The mucous membrane of maxillary sinus is derived from:", opts: ["Ectoderm.", "Mesoderm.", "Ectoderm and endoderm.", "Endoderm and mesoderm.", "Mesenchyme."], ans: 0 },
+            { id: 'm48', q: "The renal tubules are derived from:", opts: ["Neural crest.", "Neural ectoderm.", "Endoderm.", "Intermediate mesoderm.", "Mesenchyme."], ans: 3 },
+            { id: 'm49', q: "At the end of the 5th week, somites' number are totally about:", opts: ["88.", "100.", "44.", "42.", "41."], ans: 2 },
+            { id: 'm50', q: "Primordial germ cells appear in the endodermal lining of the wall of:", opts: ["Allantois.", "Yolk sac.", "Chorion.", "Placenta.", "Amnion."], ans: 1 },
+            { id: 'm51', q: "Meckel's diverticulum is related to the:", opts: ["Amnion.", "Yolk sac.", "Placenta.", "Allantois.", "Chorion."], ans: 1 },
+            { id: 'm52', q: "The cells lining the pleural cavity are derived from:", opts: ["Ectoderm.", "Mesenchyme.", "Neural crest.", "Endoderm.", "Mesoderm."], ans: 4 },
+            { id: 'm53', q: "The epithelium of the ilium is derived from:", opts: ["Ectoderm.", "Mesenchyme.", "Neural crest.", "Endoderm.", "Mesoderm."], ans: 3 },
+            { id: 'm54', q: "The epithelium of the auditory tube is derived from:", opts: ["Ectoderm.", "Mesenchyme.", "Endoderm.", "Endoderm and mesoderm.", "Mesoderm."], ans: 2 },
+            { id: 'm55', q: "During the fetal period:", opts: ["The hearing starts before the development of lungs.", "The fetus at 35 weeks is regarded as a full-term.", "There are 4 trimesters.", "At the 10th week, the sex organs are starting to differentiate.", "There is a reduction of intestinal loop at the end of the 10th week."], ans: 4 },
+            { id: 'm56', q: "At birth, the best presentation of the fetus is by his:", opts: ["Placenta.", "Hand.", "Head.", "Foot.", "Buttocks."], ans: 2 },
+            { id: 'm57', q: "The condition in the picture is due to:", opts: ["Fungal infection.", "Viral infection.", "Bacterial infection.", "Parasitic infestation.", "Lead poisoning."], ans: 1 },
+            { id: 'm58', q: "The respiratory tract is the daily source of about:", opts: ["100 ml of amniotic fluid.", "250 ml of amniotic fluid.", "1000 ml of amniotic fluid.", "260 ml of amniotic fluid.", "350 ml of amniotic fluid."], ans: 4 },
+            { id: 'm59', q: "A Lady with LMP of 1/1/2024, the EDD is:", opts: ["7/9/2024.", "8/8/2024.", "8/11/2024.", "8/10/2024.", "1/10/2024."], ans: 3 },
+            { id: 'm60', q: "At 8th week of gestation:", opts: ["The fetal heart is positive on ultrasound.", "The pregnancy is in the second trimester.", "The fetal movement can be felt by the mother.", "The placenta is fully developed.", "The umbilical hernia is reduced."], ans: 0 }
+        ];
+
+        function App() {
+            const [screen, setScreen] = useState('home');
+            const [questionsQueue, setQuestionsQueue] = useState([]);
+            const [userAnswers, setUserAnswers] = useState({});
+            const [flagged, setFlagged] = useState(new Set());
+            const [timer, setTimer] = useState(0);
+            const [isTimerRunning, setIsTimerRunning] = useState(false);
+            const [title, setTitle] = useState('');
+            const [darkMode, setDarkMode] = useState(false);
+            const [currentQIndex, setCurrentQIndex] = useState(0);
+
+            // Filter states for result
+            const [filterMode, setFilterMode] = useState('all'); // 'all', 'wrong', 'skipped'
+
+            const questionsEndRef = useRef(null);
+
+            useEffect(() => {
+                if (darkMode) document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+            }, [darkMode]);
+
+            useEffect(() => {
+                let interval;
+                if (isTimerRunning) interval = setInterval(() => setTimer(t => t + 1), 1000);
+                return () => clearInterval(interval);
+            }, [isTimerRunning]);
+
+            // Scroll to specific question
+            const scrollToQ = (index) => {
+                const el = document.getElementById(`q-${index}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            const formatTime = (s) => {
+                const m = Math.floor(s/60);
+                const sec = s%60;
+                return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+            }
+
+            const startExam = (mode, lecId = null) => {
+                let q = [];
+                let t = '';
+                if (mode === 'mid') { q = midQuestions; t = '📝 امتحان المد (60 سؤال)'; }
+                else if (mode === 'lec') { q = lecQuestions.filter(x => x.lec === lecId); t = `محاضرة ${lecId}`; }
+                else if (mode === 'custom') { q = lecId; t = '🎯 مراجعة الأخطاء'; } // Custom queue for mistakes
+
+                setQuestionsQueue(q);
+                setTitle(t);
+                setUserAnswers({});
+                setFlagged(new Set());
+                setTimer(0);
+                setIsTimerRunning(true);
+                setScreen('quiz');
+                setFilterMode('all');
+                setCurrentQIndex(0);
+                window.scrollTo(0,0);
+            }
+
+            const handleAnswer = (qId, optIdx) => setUserAnswers(prev => ({...prev, [qId]: optIdx}));
+            
+            const toggleFlag = (qId) => {
+                const next = new Set(flagged);
+                if(next.has(qId)) next.delete(qId); else next.add(qId);
+                setFlagged(next);
+            }
+
+            const goToReview = () => {
+                 setScreen('review');
+                 window.scrollTo(0,0);
+            }
+
+            const submitExam = () => {
+                setIsTimerRunning(false);
+                setScreen('results');
+                window.scrollTo(0,0);
+            }
+            
+            const retakeMistakes = () => {
+                // Filter questions where answer was wrong OR skipped
+                const wrongQs = questionsQueue.filter(q => userAnswers[q.id] !== q.ans);
+                if (wrongQs.length === 0) {
+                    alert("ما شاء الله! إجاباتك كلها صحيحة، لا توجد أخطاء لتعيدها.");
+                    return;
+                }
+                startExam('custom', wrongQs);
+            }
+
+            // --- COMPONENTS ---
+
+            // Progress Bar Component
+            const ProgressBar = () => {
+                const answered = Object.keys(userAnswers).length;
+                const total = questionsQueue.length;
+                const percent = Math.round((answered / total) * 100);
+                return (
+                    <div className="fixed top-0 left-0 w-full h-1.5 bg-slate-200 dark:bg-slate-700 z-[60]">
+                        <div className="h-full bg-gradient-to-r from-rose-500 to-orange-400 transition-all duration-500" style={{width: `${percent}%`}}></div>
+                    </div>
+                )
+            }
+
+            // --- PAGE 1: HOME ---
+            const renderHome = () => (
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 fade-in relative overflow-hidden">
+                    {/* Background decorations */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 opacity-30 dark:opacity-10 pointer-events-none">
+                         <div className="absolute top-10 left-10 w-64 h-64 bg-rose-300 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+                         <div className="absolute top-10 right-10 w-64 h-64 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+                         <div className="absolute -bottom-8 left-20 w-64 h-64 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+                    </div>
+
+                    <button onClick={() => setDarkMode(!darkMode)} className="absolute top-6 right-6 p-3 bg-white dark:bg-slate-800 rounded-full shadow-lg text-slate-500 hover:text-primary transition-all z-20">
+                        {darkMode ? <Icons.Sun/> : <Icons.Moon/>}
+                    </button>
+
+                    <div className="text-center mb-10 relative z-10">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-2xl inline-block mb-6 transform hover:scale-105 transition-transform duration-300">
+                            <div className="text-rose-600 dark:text-rose-500">
+                                <Icons.Brain />
+                            </div>
+                        </div>
+                        <h1 className="text-5xl font-black text-slate-800 dark:text-white mb-3 tracking-tight">EmbryoMaster</h1>
+                        <p className="text-slate-500 dark:text-slate-400 font-bold text-lg">النسخة الاحترافية 🚀 (دفعة 65)</p>
+                    </div>
+
+                    <div className="w-full max-w-lg space-y-4 relative z-10">
+                        <button onClick={() => startExam('mid')} className="w-full bg-slate-900 dark:bg-slate-800 text-white p-6 rounded-3xl font-bold text-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all flex justify-between items-center group border border-slate-700 dark:border-slate-600 overflow-hidden relative">
+                             <div className="absolute top-0 left-0 w-2 h-full bg-rose-500"></div>
+                            <span className="flex items-center gap-3"><span className="text-2xl">📝</span> امتحان المد (60 سؤال)</span>
+                            <span className="bg-white/10 text-xs px-3 py-1 rounded-full backdrop-blur-sm">شامل</span>
+                        </button>
+
+                        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white dark:border-slate-700">
+                            <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mb-5 text-center flex items-center justify-center gap-2">
+                                <span>📚</span> اختبار المحاضرات المنفردة
+                            </p>
+                            <div className="grid grid-cols-3 gap-3 english-text">
+                                {[1,2,3,4,5,6,7,8,9].map(i => (
+                                    <button key={i} onClick={() => startExam('lec', i)} className="bg-white dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 py-3 rounded-2xl font-bold text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary dark:hover:border-primary dark:hover:text-primary transition-all shadow-sm hover:shadow-md">
+                                        Lec {i}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // --- PAGE 2: QUIZ ---
+            const renderQuiz = () => (
+                <div className="min-h-screen pb-28 fade-in bg-slate-50 dark:bg-slate-950">
+                    <ProgressBar />
+                    
+                    {/* Header */}
+                    <div className="sticky top-0 z-50 glass border-b border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
+                        <div className="max-w-3xl mx-auto flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => {if(confirm('خروج؟')) setScreen('home')}} className="text-slate-400 hover:text-rose-500 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"><Icons.Home/></button>
+                                <div className="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl font-bold text-slate-700 dark:text-slate-300 text-sm border border-slate-200 dark:border-slate-700">
+                                    <Icons.Timer /> <span className="english-text w-12 text-center">{formatTime(timer)}</span>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                                <button onClick={goToReview} className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-4 py-2 rounded-xl font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-200 dark:border-indigo-800">
+                                    <Icons.Grid /> <span className="hidden sm:inline">مراجعة الأسئلة</span>
+                                </button>
+                                <div className="text-slate-400 font-bold text-sm english-text bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                                    {Object.keys(userAnswers).length} / {questionsQueue.length}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-3xl mx-auto p-4 space-y-6 mt-4">
+                        {questionsQueue.map((q, idx) => (
+                            <div key={q.id} id={`q-${idx}`} className={`bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border transition-all duration-300 english-text group ${flagged.has(q.id) ? 'border-amber-400 dark:border-amber-600 ring-2 ring-amber-100 dark:ring-amber-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-rose-200 dark:hover:border-slate-700'}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-3 py-1 rounded-lg text-sm font-black shadow-inner">Q {idx+1}</span>
+                                    <button onClick={() => toggleFlag(q.id)} className={`transition-all p-2 rounded-full ${flagged.has(q.id) ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'text-slate-300 hover:text-amber-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                                        {flagged.has(q.id) ? <Icons.FlagFilled/> : <Icons.Flag/>}
+                                    </button>
+                                </div>
+                                
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-6 leading-relaxed select-text">{q.q}</h3>
+                                
+                                <div className="space-y-3">
+                                    {q.opts.map((opt, oIdx) => {
+                                        const sel = userAnswers[q.id] === oIdx;
+                                        return (
+                                            <button key={oIdx} onClick={() => handleAnswer(q.id, oIdx)} className={`w-full text-left p-4 rounded-2xl text-[15px] font-medium border-2 transition-all duration-200 flex items-center gap-4 group/btn ${sel ? 'bg-rose-600 border-rose-600 text-white shadow-lg shadow-rose-200 dark:shadow-rose-900/20' : 'bg-slate-50 dark:bg-slate-800/50 border-transparent text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700'}`}>
+                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${sel ? 'border-white bg-white/20' : 'border-slate-300 group-hover/btn:border-rose-400'}`}>
+                                                    {sel && <div className="w-2.5 h-2.5 bg-white rounded-full"></div>}
+                                                </div>
+                                                <span className="leading-snug">{opt}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Bottom Action Bar */}
+                    <div className="fixed bottom-6 left-0 w-full z-40 px-4 pointer-events-none">
+                        <div className="max-w-3xl mx-auto flex justify-center pointer-events-auto">
+                             <button onClick={goToReview} className="bg-slate-900 dark:bg-slate-700 text-white px-8 py-4 rounded-2xl font-bold shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 backdrop-blur-sm border border-slate-700">
+                                <span>مراجعة وتسليم</span> <Icons.Grid/>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // --- PAGE 2.5: REVIEW DASHBOARD ---
+            const renderReview = () => {
+                const answeredCount = Object.keys(userAnswers).length;
+                const total = questionsQueue.length;
+                
+                return (
+                    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 fade-in flex flex-col items-center">
+                        <div className="w-full max-w-4xl">
+                            <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl p-8 border border-slate-100 dark:border-slate-800 mb-8">
+                                <h2 className="text-2xl font-bold text-center text-slate-800 dark:text-white mb-2">لوحة المراجعة</h2>
+                                <p className="text-center text-slate-500 mb-8">اضغط على أي سؤال للرجوع إليه</p>
+                                
+                                <div className="flex justify-center gap-6 mb-8 text-xs sm:text-sm font-bold">
+                                    <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-emerald-500"></div> تم الحل</div>
+                                    <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-amber-400"></div> مراجع (Flag)</div>
+                                    <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-slate-200 dark:bg-slate-700"></div> متروك</div>
+                                </div>
+
+                                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-3">
+                                    {questionsQueue.map((q, idx) => {
+                                        const isAns = userAnswers.hasOwnProperty(q.id);
+                                        const isFlag = flagged.has(q.id);
+                                        let bgClass = "bg-slate-100 dark:bg-slate-800 text-slate-400"; // Default
+                                        if (isFlag) bgClass = "bg-amber-100 text-amber-600 border-2 border-amber-400";
+                                        else if (isAns) bgClass = "bg-emerald-100 text-emerald-600 border-2 border-emerald-400";
+                                        
+                                        return (
+                                            <button 
+                                                key={q.id} 
+                                                onClick={() => { setScreen('quiz'); setTimeout(() => scrollToQ(idx), 100); }}
+                                                className={`aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all hover:scale-110 ${bgClass}`}
+                                            >
+                                                {idx + 1}
+                                                {isFlag && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1"></div>}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 flex-col sm:flex-row justify-center">
+                                <button onClick={() => setScreen('quiz')} className="flex-1 py-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-2xl shadow border border-slate-200 dark:border-slate-700 hover:bg-slate-50">
+                                    عودة للامتحان
+                                </button>
+                                <button onClick={submitExam} className="flex-1 py-4 bg-rose-600 text-white font-bold rounded-2xl shadow-xl hover:bg-rose-700 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">
+                                    <span>تسليم نهائي</span> {answeredCount < total && <span className="bg-rose-800 px-2 py-0.5 rounded text-xs">باقي {total - answeredCount}</span>}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+
+            // --- PAGE 3: RESULTS ---
+            const renderResults = () => {
+                let correct = 0;
+                let wrong = 0;
+                let skipped = 0;
+
+                questionsQueue.forEach(q => {
+                    if (!userAnswers.hasOwnProperty(q.id)) skipped++;
+                    else if (userAnswers[q.id] === q.ans) correct++;
+                    else wrong++;
+                });
+
+                const isMid = questionsQueue.length === 60;
+                const totalQ = questionsQueue.length;
+                const finalScore = isMid ? (correct * 0.5) : correct;
+                const maxScore = isMid ? 30 : totalQ;
+                const perc = Math.round((correct / totalQ) * 100);
+                const passed = perc >= 50;
+
+                // Filtering logic
+                const filteredQuestions = questionsQueue.filter(q => {
+                    if (filterMode === 'all') return true;
+                    if (filterMode === 'wrong') return userAnswers[q.id] !== q.ans && userAnswers.hasOwnProperty(q.id);
+                    if (filterMode === 'skipped') return !userAnswers.hasOwnProperty(q.id);
+                    return true;
+                });
+
+                return (
+                    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 fade-in">
+                        <div className="max-w-4xl mx-auto space-y-6">
+                            
+                            {/* Score Card */}
+                            <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-[2.5rem] p-8 sm:p-10 text-center relative overflow-hidden shadow-2xl border-4 border-white dark:border-slate-700">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/20 rounded-full blur-[80px]"></div>
+                                <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px]"></div>
+                                
+                                <h2 className="text-sm font-bold text-slate-400 mb-6 uppercase tracking-[0.2em] relative z-10 english-text">PERFORMANCE REPORT</h2>
+                                
+                                <div className="relative z-10 flex flex-col items-center">
+                                    <div className="flex items-end gap-2 mb-2" dir="ltr">
+                                        <span className="text-8xl font-black leading-none english-text tracking-tighter">{finalScore}</span>
+                                        <span className="text-3xl text-slate-500 font-bold mb-3 english-text">/{maxScore}</span>
+                                    </div>
+                                    <div className={`inline-block px-6 py-1.5 rounded-full font-bold text-sm mb-8 border ${passed ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50' : 'bg-rose-500/10 text-rose-400 border-rose-500/50'}`}>
+                                        {passed ? 'Passed Successfuly' : 'Keep Trying'}
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-3 gap-4 sm:gap-12 w-full max-w-md border-t border-slate-700 pt-6">
+                                        <div className="text-center">
+                                            <div className="text-3xl font-bold text-emerald-400 english-text mb-1">{correct}</div>
+                                            <div className="text-xs text-slate-400 font-bold">صحيح</div>
+                                        </div>
+                                        <div className="text-center border-x border-slate-700 px-4">
+                                            <div className="text-3xl font-bold text-rose-400 english-text mb-1">{wrong}</div>
+                                            <div className="text-xs text-slate-400 font-bold">خطأ</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-3xl font-bold text-amber-400 english-text mb-1">{skipped}</div>
+                                            <div className="text-xs text-slate-400 font-bold">متروك</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Actions & Filters */}
+                            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800">
+                                <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                                    {[
+                                        {id: 'all', label: 'الكل', icon: null},
+                                        {id: 'wrong', label: 'الأخطاء', icon: '×'},
+                                        {id: 'skipped', label: 'المتروكة', icon: '!'}
+                                    ].map(f => (
+                                        <button 
+                                            key={f.id} 
+                                            onClick={() => setFilterMode(f.id)} 
+                                            className={`px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap ${filterMode === f.id ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                        >
+                                           {f.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                
+                                { (wrong > 0 || skipped > 0) && (
+                                    <button onClick={retakeMistakes} className="w-full sm:w-auto px-6 py-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 font-bold rounded-2xl hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors flex items-center justify-center gap-2 border border-rose-200 dark:border-rose-900">
+                                        <Icons.Repeat/> <span>أعد اختبار الأخطاء فقط</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Questions List */}
+                            <div className="space-y-4">
+                                {filteredQuestions.length === 0 && (
+                                    <div className="text-center py-20 text-slate-400 font-bold">لا توجد أسئلة في هذا التصنيف</div>
+                                )}
+                                {filteredQuestions.map((q, i) => {
+                                    const userAns = userAnswers[q.id];
+                                    const isSkipped = userAns === undefined;
+                                    const isCorrect = userAns === q.ans;
+                                    
+                                    // Determine Styles
+                                    let containerClass = "border-slate-100 dark:border-slate-800";
+                                    let statusIcon = null;
+
+                                    if (isSkipped) {
+                                        containerClass = "border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-900/10";
+                                        statusIcon = <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center"><Icons.Alert/></div>;
+                                    } else if (isCorrect) {
+                                        statusIcon = <div className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center"><Icons.Check/></div>;
+                                    } else {
+                                        containerClass = "border-rose-100 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10";
+                                        statusIcon = <div className="w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center font-bold text-xl">×</div>;
+                                    }
+
+                                    return (
+                                        <div key={i} className={`bg-white dark:bg-slate-900 p-6 rounded-[2rem] border-2 shadow-sm transition-all english-text ${containerClass}`}>
+                                            <div className="flex gap-4 mb-4">
+                                                <div className="mt-1 flex-shrink-0">{statusIcon}</div>
+                                                <div>
+                                                     {isSkipped && <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded mb-2 inline-block">لم يتم الإجابة</span>}
+                                                     <p className="font-bold text-slate-800 dark:text-white text-lg leading-snug">{q.q}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-12 text-[15px]">
+                                                {/* Your Answer Section */}
+                                                <div className={`p-4 rounded-2xl border ${isSkipped ? 'border-dashed border-slate-300 text-slate-400 bg-slate-50' : (isCorrect ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800')}`}>
+                                                    <span className="font-black uppercase text-xs opacity-60 block mb-1">إجابتك:</span>
+                                                    {isSkipped ? "متروك" : q.opts[userAns]}
+                                                </div>
+
+                                                {/* Correct Answer Section (Show if wrong or skipped) */}
+                                                {(!isCorrect || isSkipped) && (
+                                                    <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                                        <span className="font-black uppercase text-xs opacity-60 block mb-1">الإجابة الصحيحة:</span>
+                                                        {q.opts[q.ans]}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            <button onClick={() => setScreen('home')} className="w-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold py-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
+                                <Icons.Back/> <span>العودة للرئيسية</span>
+                            </button>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="antialiased min-h-screen">
+                    {screen === 'home' && renderHome()}
+                    {screen === 'quiz' && renderQuiz()}
+                    {screen === 'review' && renderReview()}
+                    {screen === 'results' && renderResults()}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
